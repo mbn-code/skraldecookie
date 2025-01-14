@@ -16,8 +16,9 @@ private static TripleDESCryptoServiceProvider DES = new TripleDESCryptoServicePr
 private static MD5CryptoServiceProvider MD5 = new MD5CryptoServiceProvider();
 ```
 
-Her burde der bruges AES og SHA-256.
+Her burde der bruges AES og SHA-256, ellers går der ikke lang tid før sensitiv data kan ses.
 
+![alt text](image-2.png)
 
 “MD5 - Wikiwand.” Accessed January 14, 2025. https://www.wikiwand.com/en/articles/MD5.
 
