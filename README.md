@@ -3,9 +3,46 @@
 # Hvorfor er det skrald?
 Overvej at være et kommercielt firma der udvikler et program til at undgå eksamenssnyd, og så obfuskerer man ikke engang sin .net code. Det satme godt gået, dnSpy all the way
 
+# Målet med dette
+Målet er at give en opvågning til udviklerne af ExamCookie, da deres sikkerhedsimplementation har flere kritiske sårbarheder. Ved at belyse disse problemer håber vi på at forbedre sikkerheden i fremtidige versioner af programmet.
+
+Dette dokument beskriver flere tekniske svagheder i ExamCookie's nuværende implementation, og hvordan disse kan udnyttes. Det er vigtigt at notere at denne information deles med det formål at forbedre cybersikkerheden, ikke at facilitere snyd, og derfor uploades der ikke specifikke implementeringen til snyd.
+
 # Mulige Attack Vectors
 
-### Screenshots
+## Kryptering
+Har du nogle sinde hørt om super-computere? Måske ikke, dette er en computer der er super hurtig til en specifik ting.
+Hvis de bliver udviklet vil de kunne afsløre næsten alle nuværende krypterings algoritmer, og især de svage.
+
+Dette program ExamCookie bruger selvføgelig et godt et... ik? Måske ikke.
+Som vi kan se i koden bruges der TripleDES og MD5 enkryptering, disse er set som "insecure":
+
+```cs
+private static TripleDESCryptoServiceProvider DES = new TripleDESCryptoServiceProvider();
+private static MD5CryptoServiceProvider MD5 = new MD5CryptoServiceProvider();
+```
+
+Her burde der bruges AES og SHA-256, ellers går der ikke lang tid før sensitiv data kan ses.
+
+## Command Injection & DLL Execution
+Der er også problemer med Code Injection via DLL:
+
+```cs
+using (System.Diagnostics.Process process = new System.Diagnostics.Process())
+{
+  process.StartInfo.FileName = path;
+  process.Start();
+  process.WaitForExit();
+}
+```
+
+Hvis path bliver ændret via command injection kan vi ændre kommandoen den kører:
+
+```cs
+string path = "notepad.exe && shutdown -s";
+```
+
+## Screenshots
 Der gøres brug af [System.Drawing.Graphics.CopyFromScreen](https://github.com/dotnet/winforms/blob/62ebdb4b0d5cc7e163b8dc9331dc196e576bf162/src/System.Drawing.Common/src/System/Drawing/Graphics.cs#L2691), som i .NET kalder [BitBlt](https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-bitblt) for at tage et billede af skærmen.
 Dette er relativt nemt at komme udenom, en simpel BitBlt Hook ville kunne fjerne den eller de vinduer man har lyst til at gemme:
 
@@ -24,7 +61,7 @@ BOOL __stdcall hooks::bit_blt(HDC hdc, int x, int y, int cx, int cy, HDC hdc_src
 ```
 I ovenstående eksempel gemmes `Notepad` vinduet, men det kan nemt ændres, og et simpelt system der kan læse en liste ville kunne gemme alle vinduer man har lyst til.
 
-### Clipboard
+## Clipboard
 Der gøres brug af [System.Windows.Forms.Clipboard](https://github.com/dotnet/winforms/blob/62ebdb4b0d5cc7e163b8dc9331dc196e576bf162/src/System.Windows.Forms/src/System/Windows/Forms/OLE/Clipboard.cs#L79), som I .NET kalder [OleGetClipboard](https://learn.microsoft.com/en-us/windows/win32/api/ole2/nf-ole2-olegetclipboard) for at finde ud af hvad man har i sit clipboard.
 Dette er endnu nemmere at komme udenom, endnu en simpel hook og så bare returner en `S_OK` uden at update *ppDataObj
 
@@ -35,7 +72,7 @@ BOOL __stdcall hooks::ole_get_clipboard(void* ppDataObj)
 }
 ```
 
-### Hjemmeside URL's
+## Hjemmeside URL's
 Der gøres brug af en større funktion kaldet [GetBrowserURL](https://github.com/mbn-code/skraldecookie/blob/main/ExamCookie1414_Dump/ExamCookie/WinClient/ApplicationThread.cs#L180) som først checker hvilken browser man bruger, og det er er så ikke en specielt god implementation.
 
 For det første checkes der en liste med processnavne, og hvis den ikke kan finde en den kender, så returnerer den bare uden at checke URL'en:
@@ -81,3 +118,7 @@ private static void FiddlerApplication_BeforeRequest(Session oSession)
     }
 }
 ```
+
+# Referencer
+- "MD5 - Wikiwand." Accessed January 14, 2025. https://www.wikiwand.com/en/articles/MD5.
+- TheCyberSalad. "MD5 Is Insecure: Why This Hashing Algorithm Puts Your Files at Risk." Medium (blog), December 23, 2024.
