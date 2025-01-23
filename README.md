@@ -250,4 +250,4 @@ Understående bruger BitBlt internt som vi også har talt om i øvre sektion omk
 System.Drawing.Graphics.CopyFromScreen() 
 ```
 
-Et ydereligere eksempel på hvordan dette også kunne gøres kan findes her [eksempel]() med et eksempel skrevet i c++
+Et ydereligere eksempel på hvordan dette også kunne gøres kan findes her [eksempel](https://github.com/mbn-code/skraldecookie/tree/main/Example%20Exploit) med et eksempel skrevet i c++
