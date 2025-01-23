@@ -119,6 +119,45 @@ private static void FiddlerApplication_BeforeRequest(Session oSession)
 }
 ```
 
-# Referencer
-- "MD5 - Wikiwand." Accessed January 14, 2025. https://www.wikiwand.com/en/articles/MD5.
-- TheCyberSalad. "MD5 Is Insecure: Why This Hashing Algorithm Puts Your Files at Risk." Medium (blog), December 23, 2024.
+## Function hooking
+Function hooking er en teknik hvor man kan ændre hvordan en anden proces's funktioner opfører sig. Dette gøres typisk ved at injicere en DLL i processen og derefter "hooke" de funktioner man vil ændre.
+
+Her er et simpelt eksempel på hvordan man kunne lave en DLL der hooker en funktion:
+
+```cpp
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved)
+{
+    switch (reason)
+    {
+        case DLL_PROCESS_ATTACH:
+            // Find adressen på funktionen vi vil hooke
+            LPVOID targetFunc = GetProcAddress(GetModuleHandle(L"user32.dll"), "MessageBoxA");
+            
+            // Installer vores hook
+            MH_Initialize();
+            MH_CreateHook(targetFunc, &HookedMessageBox, NULL);
+            MH_EnableHook(targetFunc);
+            break;
+    }
+    return TRUE;
+}
+```
+
+Dette kunne bruges til at omgå mange af ExamCookie's sikkerhedsforanstaltninger, da programmet er skrevet i C# som kører på .NET, hvilket betyder at alle systemkald går gennem Win32 API'en som nemt kan hookes.
+
+Nogle ting man ville kunne hooke er ting som 
+Network check, screenshot funktioner, clipboard monitoring, file system operations, process monitoring da ExamCookie bruger Win32 API til det hele.
+
+```cs
+[DllImport("wininet.dll")]
+private static extern bool InternetGetConnectedState(ref int lpdwFlags, int dwReserved);
+[DllImport("wininet.dll", CharSet = CharSet.Auto)]
+private static extern bool InternetCheckConnection(string lpszUrl, int dwFlags, int dwReserved);
+```
+
+Understående bruger BitBlt internt som vi også har talt om i øvre sektion omkring skærmklip.
+```c#
+System.Drawing.Graphics.CopyFromScreen() 
+```
+
+Et ydereligere eksempel på hvordan dette også kunne gøres kan findes her [eksempel]() med et eksempel skrevet i c++
