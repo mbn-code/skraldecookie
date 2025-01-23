@@ -119,6 +119,96 @@ private static void FiddlerApplication_BeforeRequest(Session oSession)
 }
 ```
 
+Derudover, eftersom de tilgår værdien der er i HTML'en, kan man simpelt og nemt snyde URL checket, ved efter at være tilgået hjemmesiden, bare tømme URL feltet, eller ændre det til noget andet.
+
+## Manglende SSL Pinning
+Der mangler også SSL Pinning på deres API servers, som åbner dem til at man kan lave Man in The Middle-angreb.
+Igen kan Fiddler bruges som et eksempel, hvor vi kan [se alle deres API endpoints](https://github.com/mbn-code/skraldecookie/blob/main/ExamCookie1414_Dump/ExamCookie/WinClient/ExamApiV3Service/IExamApiV3.cs) har følgende del i deres URL `tempuri.org/IExamApiV3/<xxx>`, hvor `<xxx>` er det endpoint de vil kalde.
+Med Fiddler kan dette igen nemt stoppes på 2 forskellige måder, den første er bare at fake et 403 svar fra serveren så dataen aldrig kommer frem, det kunne se sådan her ud:
+```cs
+private static void FiddlerApplication_BeforeRequest(Session oSession)
+{
+    if (oSession.fullUrl.Contains("tempuri.org/IExamApiV3/"))
+    {
+        oSession.utilCreateResponseAndBypassServer(); // Fake Server Svar
+        oSession.oResponse.headers.HTTPResponseStatus = "403 Forbidden"; // 403
+        oSession.oResponse.headers.HTTPResponseCode = 403; // 403
+    }
+}
+```
+
+Dette ville stoppe alt data fra programmet for at blive sendt til deres server. Dog kan dette måske se lidt mærkeligt ud fra serveren, at en connected client ikke sender noget data.
+Derfor ville et bedre alternativ være at filtrere deres requests, og fjerne det info man ikke vil dele. (Nedenfor er et eksempel som nok ikke ville virke, eftersom vi ikke kan se deres request format uden at have en igangværende eksamen)
+`Vi leger at de sender informationen encoded som JSON`
+Vi ved de sender det som et UTF8 encoded Byte array, da det kan ses fra endpointen ovenfor, samt at de [her](https://github.com/mbn-code/skraldecookie/blob/main/ExamCookie1414_Dump/ExamCookie/WinClient/ClipboardThread.cs#L119-L246) UTF8 Encoder dataen.
+```cs
+private static void FiddlerApplication_BeforeRequest(Session oSession)
+{
+    if (oSession.fullUrl.Contains("tempuri.org/IExamApiV3/AddClipboard"))
+    {
+        oSession.utilDecodeRequest(); // Decode request
+        Byte[] Req = oSession.GetRequestBodyAsBytes(); // Få Request
+
+        string ReqString = System.Windows.Text.Encoding.UTF8.GetString(Req)
+
+        JObject JSON = JsonConvert.DeserializeObject<JObject>(ReqString); // Deserialize JSON fra requesten (Vi ved godt de ikke bruger JSON, det er et eksempel :D)
+
+        JSON["data"] = string.Empty; // Eller noget andet, behøves ikke være en tom streng
+
+        string AlteredReqString = JsonConvert.SerializeObject(JSON);
+
+        Byte[] NewReq =  System.Windows.Text.Encoding.UTF8.GetBytes(AlteredReqString);
+
+        oSession.RequestBody = NewReq;
+    }
+}
+```
+
+Derudover, eftersom de tilgår værdien der er i HTML'en, kan man simpelt og nemt snyde URL checket, ved efter at være tilgået hjemmesiden, bare tømme URL feltet, eller ændre det til noget andet.
+
+## Manglende SSL Pinning
+Der mangler også SSL Pinning på deres API servers, som åbner dem til at man kan lave Man in The Middle-angreb.
+Igen kan Fiddler bruges som et eksempel, hvor vi kan [se alle deres API endpoints](https://github.com/mbn-code/skraldecookie/blob/main/ExamCookie1414_Dump/ExamCookie/WinClient/ExamApiV3Service/IExamApiV3.cs) har følgende del i deres URL `tempuri.org/IExamApiV3/<xxx>`, hvor `<xxx>` er det endpoint de vil kalde.
+Med Fiddler kan dette igen nemt stoppes på 2 forskellige måder, den første er bare at fake et 403 svar fra serveren så dataen aldrig kommer frem, det kunne se sådan her ud:
+```cs
+private static void FiddlerApplication_BeforeRequest(Session oSession)
+{
+    if (oSession.fullUrl.Contains("tempuri.org/IExamApiV3/"))
+    {
+        oSession.utilCreateResponseAndBypassServer(); // Fake Server Svar
+        oSession.oResponse.headers.HTTPResponseStatus = "403 Forbidden"; // 403
+        oSession.oResponse.headers.HTTPResponseCode = 403; // 403
+    }
+}
+```
+
+Dette ville stoppe alt data fra programmet for at blive sendt til deres server. Dog kan dette måske se lidt mærkeligt ud fra serveren, at en connected client ikke sender noget data.
+Derfor ville et bedre alternativ være at filtrere deres requests, og fjerne det info man ikke vil dele. (Nedenfor er et eksempel som nok ikke ville virke, eftersom vi ikke kan se deres request format uden at have en igangværende eksamen)
+`Vi leger at de sender informationen encoded som JSON`
+Vi ved de sender det som et UTF8 encoded Byte array, da det kan ses fra endpointen ovenfor, samt at de [her](https://github.com/mbn-code/skraldecookie/blob/main/ExamCookie1414_Dump/ExamCookie/WinClient/ClipboardThread.cs#L119-L246) UTF8 Encoder dataen.
+```cs
+private static void FiddlerApplication_BeforeRequest(Session oSession)
+{
+    if (oSession.fullUrl.Contains("tempuri.org/IExamApiV3/AddClipboard"))
+    {
+        oSession.utilDecodeRequest(); // Decode request
+        Byte[] Req = oSession.GetRequestBodyAsBytes(); // Få Request
+
+        string ReqString = System.Windows.Text.Encoding.UTF8.GetString(Req)
+
+        JObject JSON = JsonConvert.DeserializeObject<JObject>(ReqString); // Deserialize JSON fra requesten (Vi ved godt de ikke bruger JSON, det er et eksempel :D)
+
+        JSON["data"] = string.Empty; // Eller noget andet, behøves ikke være en tom streng
+
+        string AlteredReqString = JsonConvert.SerializeObject(JSON);
+
+        Byte[] NewReq =  System.Windows.Text.Encoding.UTF8.GetBytes(AlteredReqString);
+
+        oSession.RequestBody = NewReq;
+    }
+}
+```
+
 ## Function hooking
 Function hooking er en teknik hvor man kan ændre hvordan en anden proces's funktioner opfører sig. Dette gøres typisk ved at injicere en DLL i processen og derefter "hooke" de funktioner man vil ændre.
 
