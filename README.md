@@ -2,6 +2,7 @@
 
 # Hvorfor er det skrald?
 Overvej at være et kommercielt firma der udvikler et program til at undgå eksamenssnyd, og så obfuskerer man ikke engang sin .net code. Det satme godt gået, dnSpy all the way
+![lortecookie](https://github.com/user-attachments/assets/87118b08-9778-4744-95f1-a06aaf3f6e0f)
 
 # Målet med dette
 Målet er at give en opvågning til udviklerne af ExamCookie, da deres sikkerhedsimplementation har flere kritiske sårbarheder. Ved at belyse disse problemer håber vi på at forbedre sikkerheden i fremtidige versioner af programmet.
